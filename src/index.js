@@ -1,11 +1,11 @@
 import './styles.css';
-
 import textTemplate from './template/textTemplate.hbs';
 import debounce from 'lodash.debounce';
-import Mark from 'mark.js';
+import searchService from './js/search-servies';
+
+let originalText;
 
 const url = 'https://baconipsum.com/api/?type=meat-and-filler';
-
 const refs = {
   textOutput: document.querySelector('[data-action="output"]'),
   searchInput: document.querySelector('[data-action=search]'),
@@ -15,31 +15,24 @@ function renderText(inputData) {
   const markup = textTemplate(inputData);
   refs.textOutput.insertAdjacentHTML('beforeend', markup);
 }
-
 function fetchText() {
   fetch(url)
     .then(response => response.json())
-    .then(renderText);
+    .then(text => {
+      renderText(text);
+      originalText = refs.textOutput.querySelector('p').innerHTML;
+    });
 }
-
 function search(e) {
-  const markInstance = new Mark(document.getElementById('article')); // вынести из функции
   const query = e.target.value;
-  const options = {};
-  markInstance.unmark({
-    done: function () {
-      markInstance.mark(query, options);
-    },
-  });
-
-  const marks = document.querySelectorAll('[data-markjs="true"]');
-  const marksArray = Object.values(marks);
-  console.log(marksArray);
-
-  for (let index = 0; index < marksArray.length; index++) {
-    const element = marksArray[index];
-    element.setAttribute('data-index', index + 1);
+  const selector = refs.textOutput.querySelector('p');
+  if (query.length !== 0 && query !== ' ') {
+    searchService.searchMatch(originalText, query, selector);
+    const marks = document.querySelectorAll('[data-mark="true"]');
+    searchService.numberMatches(marks);
+    return;
   }
+  searchService.reset(originalText, selector);
 }
 
 document.addEventListener('load', fetchText());
